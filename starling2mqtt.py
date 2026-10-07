@@ -41,6 +41,12 @@ DEFAULT_SNAPSHOT_EVENTS = ["motionDetected", "personDetected", "doorbellPushed"]
 MIN_SET_INTERVAL = 1.0
 MIN_SNAPSHOT_INTERVAL = 10.0
 
+# Undocumented: a camera that's still preparing a snapshot answers
+# NO_SNAPSHOT_PLEASE_WAIT and asks for a retry after 15 seconds.
+SNAPSHOT_PLEASE_WAIT_CODE = "NO_SNAPSHOT_PLEASE_WAIT"
+SNAPSHOT_RETRY_DELAY = 15.0
+MAX_SNAPSHOT_RETRIES = 3
+
 MAX_QUEUED_MESSAGES = 1000
 
 # After a successful write, ignore a contradicting polled value for this long:
@@ -712,6 +718,8 @@ class Bridge:
         self.write_holds = {}  # (device_id, prop) -> (value, monotonic deadline)
         self.last_snapshot = {}  # id -> monotonic time of last attempt
         self.snapshot_pending = set()
+        self.snapshot_retry_after = {}  # id -> monotonic time a retry may run
+        self.snapshot_retries = {}  # id -> consecutive NO_SNAPSHOT_PLEASE_WAIT count
         self.hub_reachable = None
         self.previously_published = load_published()
         self.stale_cleaned = False
@@ -1046,6 +1054,7 @@ class Bridge:
                 d
                 for d in self.snapshot_pending
                 if now - self.last_snapshot.get(d, float("-inf")) >= MIN_SNAPSHOT_INTERVAL
+                and now >= self.snapshot_retry_after.get(d, float("-inf"))
             ]
             self.snapshot_pending.difference_update(due)
             for d in due:
@@ -1061,10 +1070,29 @@ class Bridge:
         try:
             image = self.api.snapshot(device_id)
         except StarlingError as e:
+            if e.code == SNAPSHOT_PLEASE_WAIT_CODE and self.schedule_snapshot_retry(device_id):
+                return
             log_warning(f"Snapshot for {device_id} failed: {e} ({e.code})")
             return
+        with self.lock:
+            self.snapshot_retries.pop(device_id, None)
         self.client.publish(f"{self.base_topic}/{device_id}/snapshot", image, qos=1, retain=True)
         log_debug(f"Published {len(image)} byte snapshot for {device_id}")
+
+    def schedule_snapshot_retry(self, device_id):
+        """Re-queue a snapshot the hub asked us to retry. Returns False once retries run out."""
+        with self.lock:
+            attempts = self.snapshot_retries.get(device_id, 0) + 1
+            if attempts > MAX_SNAPSHOT_RETRIES:
+                self.snapshot_retries.pop(device_id, None)
+                return False
+            self.snapshot_retries[device_id] = attempts
+            self.snapshot_retry_after[device_id] = time.monotonic() + SNAPSHOT_RETRY_DELAY
+            self.snapshot_pending.add(device_id)
+        log_debug(
+            f"Snapshot for {device_id} not ready; retry {attempts} in {SNAPSHOT_RETRY_DELAY}s"
+        )
+        return True
 
     def snapshot_worker(self):
         while not self.stop_event.is_set():

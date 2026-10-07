@@ -6,7 +6,9 @@ import requests
 
 import starling2mqtt
 from starling2mqtt import (
+    MAX_SNAPSHOT_RETRIES,
     MIN_SNAPSHOT_INTERVAL,
+    SNAPSHOT_RETRY_DELAY,
     Bridge,
     StarlingAPI,
     StarlingError,
@@ -462,6 +464,37 @@ class TestSnapshots:
         bridge.client.publish.assert_called_once_with(
             "starling2mqtt/AAAA1111BBBB2222/snapshot", b"\xff\xd8jpeg", qos=1, retain=True
         )
+
+    def test_please_wait_retries_after_delay(self, bridge):
+        bridge.api.snapshot.side_effect = StarlingError("wait", "NO_SNAPSHOT_PLEASE_WAIT")
+        with patch.object(starling2mqtt.time, "monotonic", return_value=100.0):
+            assert bridge.due_snapshots(100.0) == []
+            bridge.take_snapshot(DOORBELL["id"])
+        assert bridge.snapshot_pending == {DOORBELL["id"]}
+        assert bridge.due_snapshots(100.0 + SNAPSHOT_RETRY_DELAY - 1) == []
+        assert bridge.due_snapshots(100.0 + SNAPSHOT_RETRY_DELAY) == [DOORBELL["id"]]
+        bridge.client.publish.assert_not_called()
+
+    def test_please_wait_gives_up_after_max_retries(self, bridge, caplog):
+        bridge.api.snapshot.side_effect = StarlingError("wait", "NO_SNAPSHOT_PLEASE_WAIT")
+        for _ in range(MAX_SNAPSHOT_RETRIES):
+            bridge.take_snapshot(DOORBELL["id"])
+            bridge.snapshot_pending.clear()
+        assert "failed" not in caplog.text
+        bridge.take_snapshot(DOORBELL["id"])
+        assert bridge.snapshot_pending == set()
+        assert "Snapshot for AAAA1111BBBB2222 failed" in caplog.text
+
+    def test_success_resets_retry_count(self, bridge):
+        bridge.api.snapshot.side_effect = [StarlingError("wait", "NO_SNAPSHOT_PLEASE_WAIT"), b"jpg"]
+        bridge.take_snapshot(DOORBELL["id"])
+        bridge.take_snapshot(DOORBELL["id"])
+        assert bridge.snapshot_retries == {}
+
+    def test_other_errors_not_retried(self, bridge):
+        bridge.api.snapshot.side_effect = StarlingError("off", "NO_SNAPSHOT_CAMERA_OFF")
+        bridge.take_snapshot(DOORBELL["id"])
+        assert bridge.snapshot_pending == set()
 
     def test_skips_disabled_camera(self, bridge):
         bridge.state[DOORBELL["id"]] = {"cameraEnabled": False}

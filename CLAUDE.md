@@ -58,7 +58,9 @@ success it publishes the new value and records a `write_holds` entry, so for
 **Snapshots.** `request_snapshot()` adds a camera to `snapshot_pending`. The snapshot
 worker takes the ones that `due_snapshots()` says are past `MIN_SNAPSHOT_INTERVAL`.
 Triggers: a configured event property changing to true, the periodic interval, and the
-refresh button. JPEG bytes are published retained.
+refresh button. JPEG bytes are published retained. The undocumented
+`NO_SNAPSHOT_PLEASE_WAIT` error re-queues the camera after `SNAPSHOT_RETRY_DELAY`
+(`schedule_snapshot_retry()`), up to `MAX_SNAPSHOT_RETRIES` times in a row.
 
 **Availability.** Device entities use both `<base>/bridge/status` (the LWT) and
 `<base>/hub/availability`, with `availability_mode: all`. Hub entities use only the
