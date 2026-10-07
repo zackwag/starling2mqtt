@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "starling2mqtt"
+version = "0.0.0"
+description = "A Starling Home Hub (Developer Connect) to MQTT bridge for Home Assistant"
+requires-python = ">=3.10"
+dependencies = [
+    "paho-mqtt",
+    "pyyaml",
+    "requests",
+]
+
+[tool.ruff]
+line-length = 100

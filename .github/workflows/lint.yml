@@ -1,33 +1,35 @@
 name: Lint
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
-permissions:
-  contents: read
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions: {}
 
 jobs:
-  shellcheck:
-    name: ShellCheck
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - name: ShellCheck
-        uses: ludeeus/action-shellcheck@2.0.0
+      - uses: actions/checkout@v7
         with:
-          scandir: './scripts'
+          persist-credentials: false
 
-  actionlint:
-    name: actionlint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - name: actionlint
-        uses: reviewdog/action-actionlint@v1.75.2
+      - uses: actions/setup-python@v7
         with:
-          reporter: local
-          fail_level: error
-          filter_mode: nofilter
+          python-version: "3.13"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Check formatting
+        run: ruff format --check .
+
+      - name: Lint
+        run: ruff check .

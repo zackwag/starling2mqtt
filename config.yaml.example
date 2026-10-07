@@ -1,0 +1,59 @@
+# Any value below can also be set with an environment variable, which wins
+# over this file: STARLING_HOST, STARLING_PORT, STARLING_API_KEY,
+# STARLING_POLL_INTERVAL, MQTT_BROKER, MQTT_PORT, MQTT_USERNAME,
+# MQTT_PASSWORD, MQTT_BASE_TOPIC, MQTT_DISCOVERY_PREFIX.
+
+starling:
+  host: "[CHANGEME]"          # Starling Home Hub IP or hostname
+  port: 3080                  # HTTP port of the Developer Connect API
+  api_key: "[CHANGEME]"       # Starling app > Developer Connect > API keys
+  poll_interval: 2            # seconds between device polls (reads are local and cheap)
+  device_refresh_interval: 300  # seconds between re-reading the device list / hub status
+  request_timeout: 10
+
+mqtt:
+  broker: "[CHANGEME]"
+  port: 1883
+  username: "[CHANGEME]"
+  password: "[CHANGEME]"
+  client_id: "starling2mqtt"
+  base_topic: "starling2mqtt"
+  discovery_prefix: "homeassistant"
+
+devices:
+  # Device types to bridge: cam, thermostat, temp_sensor, lock,
+  # home_away_control, weather (protect also works but isn't on by default).
+  types: [cam, thermostat, temp_sensor, lock, home_away_control, weather]
+  # Optional allow/deny lists of device ids or names (case-insensitive).
+  # An empty include list means "every device of the types above".
+  include: []
+  exclude: []
+
+properties:
+  # Glob patterns matched against "property", "<device name>/property" or
+  # "<device id>/property". An include match always beats an exclude.
+  # Setting 'exclude' replaces the default list, so keep faceDetected:* if
+  # you don't want one binary sensor per known face on every camera.
+  exclude:
+    - "faceDetected:*"
+    - "supportsStreaming"
+  include: []
+  # Examples:
+  # include:
+  #   - "faceDetected:unfamiliar"
+  #   - "Entryway Doorbell/faceDetected:Alice"
+  # exclude:
+  #   - "faceDetected:*"
+  #   - "Office Camera/animalDetected"
+
+snapshots:
+  # Publishes a still JPEG to an MQTT camera entity per camera. Needs the
+  # API key's 'camera' permission. The hub allows one snapshot per camera
+  # every 10 seconds; requests in between are deferred, not dropped.
+  enabled: true
+  interval: 300               # periodic refresh in seconds (0 = events/button only)
+  events:                     # properties whose rising edge triggers a snapshot
+    - motionDetected
+    - personDetected
+    - doorbellPushed
+

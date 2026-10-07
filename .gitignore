@@ -1,10 +1,26 @@
-.DS_Store
-*.log
+# Active config (contains credentials)
+config.yaml
 .env
-.env.local
-node_modules/
-dist/
-build/
+
+# Runtime state
+published_entities.json
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.log
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments
 .venv/
+venv/
+env/
+
+# System files
+.DS_Store
+Thumbs.db
