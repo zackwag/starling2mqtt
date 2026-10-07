@@ -14,7 +14,7 @@ import requests
 import yaml
 
 # App Information
-__version__ = "0.1.1"  # x-release-please-version
+__version__ = "0.2.0"  # x-release-please-version
 APP_NAME = "starling2mqtt"
 SUPPORT_URL = "https://github.com/zackwag/starling2mqtt"
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/zackwag/starling2mqtt/compare/v0.1.1...v0.2.0) (2026-10-07)
+
+
+### Features
+
+* show Nest model names instead of the raw device type ([#5](https://github.com/zackwag/starling2mqtt/issues/5)) ([6f1c183](https://github.com/zackwag/starling2mqtt/commit/6f1c183467a645d66e967b39c0f6de18031dad04))
+
 ## [0.1.1](https://github.com/zackwag/starling2mqtt/compare/v0.1.0...v0.1.1) (2026-10-07)
 
 
