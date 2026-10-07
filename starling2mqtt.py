@@ -469,12 +469,33 @@ def decode_command(payload, current):
     return text
 
 
-def build_device_info(device, hub_identifier):
+# HA device model per Starling device type. The API only reports an exact model
+# (cameraModel) for some cameras, so these are the fallback.
+DEVICE_MODELS = {
+    "cam": "Nest Cam",
+    "thermostat": "Nest Thermostat",
+    "temp_sensor": "Nest Temperature Sensor",
+    "lock": "Nest × Yale Lock",
+    "protect": "Nest Protect",
+    "home_away_control": "Home/Away Control",
+    "weather": "Weather",
+}
+
+
+def device_model(device_type, props):
+    if props.get("cameraModel"):
+        return props["cameraModel"]
+    if device_type == "cam" and "doorbellPushed" in props:
+        return "Nest Doorbell"
+    return DEVICE_MODELS.get(device_type) or humanize(device_type or "device")
+
+
+def build_device_info(device, hub_identifier, props=None):
     info = {
         "identifiers": [f"{APP_NAME}_{device['id']}".lower()],
         "name": device.get("name") or device["id"],
         "manufacturer": "Google Nest",
-        "model": device.get("cameraModel") or humanize(device.get("type", "device")),
+        "model": device_model(device.get("type"), props or device),
         "via_device": hub_identifier,
     }
     if device.get("serialNumber"):
@@ -941,7 +962,7 @@ class Bridge:
         device_id = device["id"]
         device_type = device.get("type")
         device = {**device, **{k: props[k] for k in METADATA_PROPERTIES if k in props}}
-        device_info = build_device_info(device, self.hub_identifier)
+        device_info = build_device_info(device, self.hub_identifier, props)
         with self.lock:
             previous = self.state.get(device_id, {})
 
