@@ -14,9 +14,11 @@ from starling2mqtt import (
     StarlingError,
     apply_env_overrides,
     build_climate_discovery,
+    build_device_info,
     build_entity_discovery,
     decode_command,
     device_included,
+    device_model,
     encode_value,
     entity_spec,
     humanize,
@@ -196,6 +198,39 @@ class TestSpecs:
     def test_decode_command_rejects_bad_bool(self):
         with pytest.raises(ValueError):
             decode_command("maybe", False)
+
+
+# --- device models ---
+
+
+class TestDeviceModel:
+    @pytest.mark.parametrize(
+        ("device_type", "props", "expected"),
+        [
+            ("cam", {"motionDetected": False}, "Nest Cam"),
+            ("cam", {"doorbellPushed": False}, "Nest Doorbell"),
+            ("cam", {"cameraModel": "Nest Cam IQ Outdoor"}, "Nest Cam IQ Outdoor"),
+            ("thermostat", {}, "Nest Thermostat"),
+            ("lock", {}, "Nest × Yale Lock"),
+            ("something_new", {}, "Something_new"),
+        ],
+    )
+    def test_device_model(self, device_type, props, expected):
+        assert device_model(device_type, props) == expected
+
+    def test_doorbell_detected_even_if_property_excluded(self, bridge):
+        # Filters hide entities, but the raw props still identify a doorbell.
+        bridge.properties_conf = {"exclude": ["doorbellPushed"]}
+        bridge.process_device(DOORBELL, doorbell_props())
+        config = json.loads(
+            published(bridge.client)[
+                "homeassistant/binary_sensor/starling2mqtt_aaaa1111bbbb2222_motiondetected/config"
+            ]
+        )
+        assert config["device"]["model"] == "Nest Doorbell"
+
+    def test_build_device_info_without_props(self):
+        assert build_device_info(PATIO, "hub")["model"] == "Nest Cam"
 
 
 # --- discovery payloads ---
