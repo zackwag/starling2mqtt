@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/zackwag/starling2mqtt/compare/v0.2.0...v0.2.1) (2026-11-11)
+
+
+### Miscellaneous Chores
+
+* fix dependabot commit-message prefixes for conventional commits ([#10](https://github.com/zackwag/starling2mqtt/issues/10)) ([e7baefd](https://github.com/zackwag/starling2mqtt/commit/e7baefd8d83fb6490ad5f02a751e5fa6def7f9ed))
+
 ## [0.2.0](https://github.com/zackwag/starling2mqtt/compare/v0.1.1...v0.2.0) (2026-10-07)
 
 
