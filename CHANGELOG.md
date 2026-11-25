@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/zackwag/starling2mqtt/compare/v0.2.1...v0.2.2) (2026-11-25)
+
+
+### Miscellaneous Chores
+
+* **deps:** Update pyyaml requirement from &gt;=6.0.3 to &gt;=6.0.4 ([#12](https://github.com/zackwag/starling2mqtt/issues/12)) ([1cc533f](https://github.com/zackwag/starling2mqtt/commit/1cc533f353c11f9f082e67f3bd056b0a32e551bd))
+
 ## [0.2.1](https://github.com/zackwag/starling2mqtt/compare/v0.2.0...v0.2.1) (2026-11-11)
 
 
